@@ -18,7 +18,7 @@ Train and save the production model bundle, then start the Flask app:
 
 ```bash
 pip install -r requirements.txt
-python -m hdb_ml.export_bundle          # full data; add --sample 50000 for a quicker export
+python -m hdb_ml.export_bundle          # writes models/model_bundle.joblib (see below)
 python app.py                           # http://127.0.0.1:5000
 ```
 
@@ -28,13 +28,14 @@ python app.py                           # http://127.0.0.1:5000
 
 ```bash
 pip install -r requirements.txt
-python -m hdb_ml.export_bundle    # creates outputs/model_bundle.joblib
+python scripts/fetch_hdb_resale.py   # if you do not have data/resale.csv yet
+python -m hdb_ml.export_bundle         # creates models/model_bundle.joblib
 streamlit run streamlit_app.py
 ```
 
 Opens a browser tab (default `http://localhost:8501`). Same model file and inputs as the Flask app.
 
-**Deploying (e.g. Streamlit Community Cloud):** set the main file to `streamlit_app.py` and use this repo’s `requirements.txt`. You must provide `outputs/model_bundle.joblib` (commit it if acceptable, or run `python -m hdb_ml.export_bundle` in a build step after fetching `data/resale.csv`). Without the bundle, the app shows setup instructions.
+**Deploying (e.g. Streamlit Community Cloud):** set the main file to `streamlit_app.py` and use this repo’s `requirements.txt`. Commit **`models/model_bundle.joblib`** (tracked by the repo; ~1–2 MB) so the cloud app can load it. To regenerate after updating data: `python -m hdb_ml.export_bundle --out models/model_bundle.joblib`. Local dev may still use `outputs/model_bundle.joblib` if you export there; the loader checks `models/` first, then `outputs/`.
 
 ## Run the pipeline
 

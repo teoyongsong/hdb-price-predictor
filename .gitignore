@@ -1,9 +1,11 @@
 # Data & downloads
 data/
 
-# Model outputs & artefacts
+# Model outputs & artefacts (plots, ad-hoc exports)
 outputs/
+# Ignore stray joblibs except the deployed bundle (Streamlit Cloud needs it in git)
 *.joblib
+!models/model_bundle.joblib
 
 # Python
 __pycache__/

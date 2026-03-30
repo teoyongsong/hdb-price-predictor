@@ -16,12 +16,18 @@ def load_model_bundle(path: Path | str | None = None) -> dict[str, Any] | None:
     """Load `model_bundle.joblib` produced by `hdb_ml.export_bundle`."""
     import joblib
 
-    from hdb_ml.config import MODEL_BUNDLE_PATH
+    from hdb_ml.config import MODEL_BUNDLE_PATH, OUTPUT_DIR
 
-    p = Path(path) if path is not None else MODEL_BUNDLE_PATH
-    if not p.exists():
-        return None
-    return joblib.load(p)
+    if path is not None:
+        candidates = [Path(path)]
+    else:
+        # Prefer committed path (Streamlit Cloud), then legacy local outputs/
+        candidates = [MODEL_BUNDLE_PATH, OUTPUT_DIR / "model_bundle.joblib"]
+
+    for p in candidates:
+        if p.exists():
+            return joblib.load(p)
+    return None
 
 
 def remaining_lease_from_99_year_lease(lease_commence_year: int, valuation_year: int) -> float:

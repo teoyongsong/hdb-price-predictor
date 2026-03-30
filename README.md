@@ -24,6 +24,18 @@ python app.py                           # http://127.0.0.1:5000
 
 `--port` and `--host` are supported (see `python app.py --help`). The page loads town, flat type, model, and storey options from the bundle; users enter floor area (sqm), lease commencement year, and valuation year (optional advanced: remaining lease override).
 
+### Streamlit
+
+```bash
+pip install -r requirements.txt
+python -m hdb_ml.export_bundle    # creates outputs/model_bundle.joblib
+streamlit run streamlit_app.py
+```
+
+Opens a browser tab (default `http://localhost:8501`). Same model file and inputs as the Flask app.
+
+**Deploying (e.g. Streamlit Community Cloud):** set the main file to `streamlit_app.py` and use this repo’s `requirements.txt`. You must provide `outputs/model_bundle.joblib` (commit it if acceptable, or run `python -m hdb_ml.export_bundle` in a build step after fetching `data/resale.csv`). Without the bundle, the app shows setup instructions.
+
 ## Run the pipeline
 
 ```bash

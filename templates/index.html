@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HDB resale estimate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f4f0e8;
+      --ink: #1a1f16;
+      --muted: #5c6358;
+      --accent: #0d5c4a;
+      --accent-dim: #0a4639;
+      --card: #fffef9;
+      --border: #d4cfc3;
+      --error: #8b2942;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Source Sans 3", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      background-image:
+        radial-gradient(ellipse 120% 80% at 100% 0%, rgba(13, 92, 74, 0.08), transparent 50%),
+        radial-gradient(ellipse 80% 60% at 0% 100%, rgba(139, 90, 43, 0.06), transparent 45%);
+    }
+    .wrap {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+    h1 {
+      font-family: Fraunces, Georgia, serif;
+      font-weight: 600;
+      font-size: clamp(1.75rem, 4vw, 2.15rem);
+      letter-spacing: -0.02em;
+      margin: 0 0 0.35rem;
+      color: var(--accent-dim);
+    }
+    .lede {
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.5;
+      margin: 0 0 1.75rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 1.35rem;
+      box-shadow: 0 12px 40px rgba(26, 31, 22, 0.06);
+    }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    .field { margin-bottom: 1.1rem; }
+    select, input[type="number"] {
+      width: 100%;
+      padding: 0.65rem 0.75rem;
+      font: inherit;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+    }
+    select:focus, input:focus {
+      outline: 2px solid rgba(13, 92, 74, 0.35);
+      border-color: var(--accent);
+    }
+    .row2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
+    button[type="submit"] {
+      width: 100%;
+      margin-top: 0.5rem;
+      padding: 0.85rem 1rem;
+      font: inherit;
+      font-weight: 600;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.05s ease;
+    }
+    button[type="submit"]:hover { background: var(--accent-dim); }
+    button[type="submit"]:active { transform: scale(0.99); }
+    button[disabled] { opacity: 0.5; cursor: not-allowed; }
+    .result {
+      margin-top: 1.5rem;
+      padding: 1.25rem;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(13, 92, 74, 0.09), rgba(13, 92, 74, 0.02));
+      border: 1px solid rgba(13, 92, 74, 0.2);
+      display: none;
+    }
+    .result.visible { display: block; }
+    .result .price {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 2rem;
+      color: var(--accent-dim);
+      margin: 0 0 0.35rem;
+    }
+    .result .meta { font-size: 0.9rem; color: var(--muted); margin: 0; }
+    .banner {
+      padding: 1rem 1.1rem;
+      border-radius: var(--radius);
+      background: #fff8e8;
+      border: 1px solid #e8d4a8;
+      color: #5c4a1f;
+      font-size: 0.95rem;
+      line-height: 1.45;
+      margin-bottom: 1.25rem;
+    }
+    .banner.error { background: #fceef1; border-color: #e8b8c4; color: var(--error); }
+    .footnote {
+      margin-top: 2rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    details { margin-top: 0.75rem; }
+    summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>HDB resale estimate</h1>
+    <p class="lede">
+      Indicative price from a gradient-boosted model trained on open resale data. Not a valuation for finance or legal use.
+    </p>
+
+    {% if not model_ready %}
+    <div class="banner error" id="setup-msg">
+      No model file found at <code>{{ model_path }}</code>.
+      From the project folder, run:
+      <pre style="margin:0.6rem 0 0; font-size:0.85rem;">python -m hdb_ml.export_bundle</pre>
+      then restart this app.
+    </div>
+    {% endif %}
+
+    <div class="banner" id="load-banner" style="display:none;"></div>
+
+    <form class="card" id="predict-form" {% if not model_ready %}aria-disabled="true"{% endif %}>
+      <div class="field">
+        <label for="town">Town</label>
+        <select id="town" name="town" required></select>
+      </div>
+      <div class="field">
+        <label for="flat_type">Flat type</label>
+        <select id="flat_type" name="flat_type" required></select>
+      </div>
+      <div class="field">
+        <label for="flat_model">Flat model</label>
+        <select id="flat_model" name="flat_model" required></select>
+      </div>
+      <div class="field">
+        <label for="storey_range">Storey range</label>
+        <select id="storey_range" name="storey_range" required></select>
+      </div>
+      <div class="field">
+        <label for="floor_area_sqm">Floor area (sqm)</label>
+        <input type="number" id="floor_area_sqm" name="floor_area_sqm" min="25" max="350" step="1" value="90" required />
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="lease_commence_year">Lease commence year</label>
+          <input type="number" id="lease_commence_year" name="lease_commence_year" min="1966" max="2030" value="1995" required />
+        </div>
+        <div class="field">
+          <label for="valuation_year">Valuation “as of” year</label>
+          <input type="number" id="valuation_year" name="valuation_year" min="2017" max="2030" value="2026" required />
+        </div>
+      </div>
+      <details>
+        <summary>Advanced</summary>
+        <div class="field" style="margin-top:0.75rem;">
+          <label for="remaining_lease_years">Remaining lease (years), optional</label>
+          <input type="number" id="remaining_lease_years" name="remaining_lease_years" min="0" max="99" step="0.1" placeholder="Leave blank to estimate from 99-year lease" />
+        </div>
+      </details>
+      <button type="submit" id="submit-btn" {% if not model_ready %}disabled{% endif %}>Estimate price</button>
+    </form>
+
+    <div class="result" id="result" aria-live="polite">
+      <p class="price" id="price-line"></p>
+      <p class="meta" id="meta-line"></p>
+    </div>
+
+    <p class="footnote">
+      Limitations: market drift, rare flat types, and policy changes are not fully captured.
+      Estimates are rounded to the nearest $100. Always disclose uncertainty when sharing with others.
+    </p>
+  </div>
+
+  <script>
+    const modelReady = {{ model_ready | tojson }};
+
+    async function loadOptions() {
+      const banner = document.getElementById("load-banner");
+      if (!modelReady) return;
+      try {
+        const r = await fetch("/api/options");
+        if (!r.ok) throw new Error((await r.json()).error || r.statusText);
+        const data = await r.json();
+        const lists = data.option_lists || {};
+        for (const [id, key] of [
+          ["town", "town"],
+          ["flat_type", "flat_type"],
+          ["flat_model", "flat_model"],
+          ["storey_range", "storey_range"],
+        ]) {
+          const sel = document.getElementById(id);
+          sel.innerHTML = "";
+          (lists[key] || []).forEach((v) => {
+            const o = document.createElement("option");
+            o.value = v;
+            o.textContent = v;
+            sel.appendChild(o);
+          });
+        }
+      } catch (e) {
+        banner.style.display = "block";
+        banner.className = "banner error";
+        banner.textContent = "Could not load dropdown options: " + e.message;
+      }
+    }
+
+    document.getElementById("predict-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const btn = document.getElementById("submit-btn");
+      const result = document.getElementById("result");
+      const payload = {
+        town: document.getElementById("town").value,
+        flat_type: document.getElementById("flat_type").value,
+        flat_model: document.getElementById("flat_model").value,
+        storey_range: document.getElementById("storey_range").value,
+        floor_area_sqm: Number(document.getElementById("floor_area_sqm").value),
+        lease_commence_year: Number(document.getElementById("lease_commence_year").value),
+        valuation_year: Number(document.getElementById("valuation_year").value),
+      };
+      const rem = document.getElementById("remaining_lease_years").value;
+      if (rem !== "") payload.remaining_lease_years = Number(rem);
+
+      btn.disabled = true;
+      result.classList.remove("visible");
+      try {
+        const r = await fetch("/api/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Request failed");
+        const p = data.predicted_price_sgd;
+        document.getElementById("price-line").textContent =
+          "Estimated resale price: SGD " + p.toLocaleString("en-SG");
+        document.getElementById("meta-line").textContent =
+          "Based on your inputs (approx. age " +
+          Math.round(data.inputs.age_years) +
+          " y, remaining lease ~" +
+          data.inputs.remaining_lease_years.toFixed(1) +
+          " y).";
+        result.classList.add("visible");
+      } catch (e) {
+        document.getElementById("load-banner").style.display = "block";
+        document.getElementById("load-banner").className = "banner error";
+        document.getElementById("load-banner").textContent = e.message;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    loadOptions();
+  </script>
+</body>
+</html>
